@@ -1,7 +1,8 @@
-name: Run Autonomous Blogger
+name: Dynamic AI Publisher Engine
 on:
-  schedule:
-    - cron: '0 9 * * *'
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
