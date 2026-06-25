@@ -43,10 +43,11 @@ Your Task:
 
 Formatting Guidelines:
 - Do NOT wrap your output in markdown code blocks like ```html. Start and end directly with HTML tags.
+- Inject a global style block at the very top: <style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; } h1, h2, h3 { color: #111; margin-top: 1.5em; } a { color: #0066cc; }</style>
 - Use a single <h1> tag for your main headline at the top.
-- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1> to target Google's featured snippets.
+- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1>.
 - Use clean <h2> and <h3> tags for structured subheaders.
-- Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution to the problem.
+- Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution.
 """
 
 print("Querying Gemini 2.5 Engine with Search Grounding enabled...")
