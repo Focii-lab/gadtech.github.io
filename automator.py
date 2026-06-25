@@ -4,7 +4,9 @@ import sys
 from google import genai
 from google.genai import types
 
-# 1. Fetch the authenticated key
+# ==========================================
+# 1. INITIALIZATION & SECURITY CHECK
+# ==========================================
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
     print("CRITICAL ERROR: 'GEMINI_API_KEY' secret is missing.")
@@ -16,8 +18,12 @@ except Exception as e:
     print(f"CRITICAL ERROR: Failed to initialize GenAI Client: {e}")
     sys.exit(1)
 
-# 2. History Ledger Management
+# ==========================================
+# 2. FILE PATH DATA LAYERS
+# ==========================================
 HISTORY_FILE = "past_topics.txt"
+INDEX_FILE = "index.html"
+
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, "r", encoding="utf-8") as f:
         past_topics = f.read().strip()
@@ -29,9 +35,17 @@ AFFILIATE_LINKS = {
     "BOOK_REC": "https://www.example-affiliate.com/tracking-id-2"
 }
 
-# Note the doubled {{ }} around the CSS properties below to prevent Python f-string parsing errors
+# Helper function to convert dynamic titles to identical URL filenames
+def generate_slug(title_string):
+    slug = title_string.lower()
+    slug = re.sub(r'[^a-z0-9\s-]', '', slug)
+    return re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
+
+# ==========================================
+# 3. GENERATE THE NEW POST
+# ==========================================
 prompt = f"""
-Context: You are an expert B2B SaaS optimization blogger. 
+Context: You are an expert B2B SaaS optimization blogger writing technical articles for digital creators. 
 To avoid duplication, here are the topics you have ALREADY covered:
 ---
 {past_topics}
@@ -45,8 +59,8 @@ Formatting Guidelines:
 - Do NOT wrap your output in markdown code blocks like ```html. Start and end directly with HTML tags.
 - Inject this global style block at the very top: <style>body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }} h1, h2, h3 {{ color: #111; margin-top: 1.5em; }} a {{ color: #0066cc; }}</style>
 - Use a single <h1> tag for your main headline at the top.
-- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1> to target Google's featured snippets.
-- Use clean <h2> and <h3> tags for structured subheaders.
+- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1>.
+- Use clean <h2> and <h3> tags for structured subheaders. Do NOT use markdown notation like ** or ## anywhere in the text.
 - Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution.
 """
 
@@ -64,21 +78,16 @@ except Exception as e:
     print(f"CRITICAL ERROR: Gemini modern API call failed: {e}")
     sys.exit(1)
 
-# Clean up any potential markdown text containers from the response
 clean_html = re.sub(r'(^```html\s*|^```xml\s*|^```\s*)|(\s*```$)', '', raw_text.strip(), flags=re.IGNORECASE)
 
-# Swap out placeholders for active tracking links
 for placeholder, real_link in AFFILIATE_LINKS.items():
     link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold; text-decoration: underline;">Check out our recommended optimization tool here</a>'
     clean_html = clean_html.replace(f"[LINK:{placeholder}]", link_html)
 
-# Extract Title for file naming conventions
 title_match = re.search(r'<h1>(.*?)</h1>', clean_html)
 if title_match:
-    extracted_title = title_match.group(1)
-    slug = extracted_title.lower()
-    slug = re.sub(r'[^a-z0-9\s-]', '', slug)
-    filename = re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
+    extracted_title = title_match.group(1).strip()
+    filename = generate_slug(extracted_title)
 else:
     extracted_title = "Latest Automation Update"
     filename = "latest-automation-update.html"
@@ -87,10 +96,72 @@ else:
 try:
     with open(filename, "w", encoding="utf-8") as f:
         f.write(clean_html)
-        
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(extracted_title + "\n")
-    print(f"SUCCESS: Generated content saved cleanly as {filename}")
+    print(f"SUCCESS: Article written cleanly as: {filename}")
 except Exception as e:
-    print(f"CRITICAL ERROR: Failed writing to local file system: {e}")
+    print(f"CRITICAL ERROR: Failed writing article to disk: {e}")
+    sys.exit(1)
+
+# ==========================================
+# 4. DYNAMIC HOMEPAGE (INDEX.HTML) GENERATOR
+# ==========================================
+print("Compiling dynamic homepage index roll...")
+
+# Read the updated history file lines
+with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+    all_posts = [line.strip() for line in f.readlines() if line.strip()]
+
+# Filter out the placeholder initialization line if present
+all_posts = [post for post in all_posts if post != "Baseline History Init"]
+
+# Build HTML list items dynamically for every historical post
+list_items_html = ""
+for post_title in reversed(all_posts): # Latest articles first
+    post_url = generate_slug(post_title)
+    list_items_html += f"""
+    <li style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; list-style: none;">
+        <h2 style="margin: 0 0 10px 0; font-size: 1.5rem;">
+            <a href="{post_url}" style="color: #111; text-decoration: none; font-weight: 700;">{post_title}</a>
+        </h2>
+        <a href="{post_url}" style="color: #0066cc; font-size: 0.95rem; font-weight: 500;">Read Troubleshooting Guide &rarr;</a>
+    </li>
+    """
+
+# Wrap list inside a clean homepage skin shell
+index_html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GadTech Optimization Labs</title>
+    <style>
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 60px auto; padding: 0 20px; color: #333; }}
+        header {{ margin-bottom: 50px; border-bottom: 3px solid #111; padding-bottom: 20px; }}
+        h1 {{ color: #111; margin: 0; font-size: 2.25rem; font-weight: 800; letter-spacing: -0.5px; }}
+        p.subtitle {{ color: #666; margin: 5px 0 0 0; font-size: 1.1rem; }}
+        ul {{ padding: 0; }}
+        a:hover {{ text-decoration: underline !important; color: #004499 !important; }}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>GadTech Optimization Labs</h1>
+        <p class="subtitle">Autonomous diagnostic solutions & troubleshooting playbooks for digital creators.</p>
+    </header>
+    <main>
+        <ul>
+            {list_items_html if list_items_html else '<li style="list-style:none; color:#666;">No articles published yet. Check back soon!</li>'}
+        </ul>
+    </main>
+</body>
+</html>
+"""
+
+try:
+    with open(INDEX_FILE, "w", encoding="utf-8") as f:
+        f.write(index_html_content)
+    print("SUCCESS: Homepage index.html updated successfully!")
+except Exception as e:
+    print(f"CRITICAL ERROR: Failed to write homepage: {e}")
     sys.exit(1)
