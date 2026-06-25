@@ -1,1 +1,0 @@
-# gadtech.github.io 
