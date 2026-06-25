@@ -1,22 +1,23 @@
 import os
 import re
 import sys
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
-# 1. Fetch and verify the hidden API Key
+# 1. Fetch the authenticated key
 api_key = os.environ.get("GEMINI_API_KEY")
 if not api_key:
-    print("CRITICAL ERROR: 'GEMINI_API_KEY' secret is missing or empty.")
+    print("CRITICAL ERROR: 'GEMINI_API_KEY' secret is missing.")
     sys.exit(1)
 
 try:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Initialize using the modern SDK client wrapper
+    client = genai.Client(api_key=api_key)
 except Exception as e:
-    print(f"CRITICAL ERROR: Failed to initialize Gemini Client: {e}")
+    print(f"CRITICAL ERROR: Failed to initialize GenAI Client: {e}")
     sys.exit(1)
 
-# 2. History Ledger System
+# 2. History Ledger Management
 HISTORY_FILE = "past_topics.txt"
 if os.path.exists(HISTORY_FILE):
     with open(HISTORY_FILE, "r", encoding="utf-8") as f:
@@ -24,7 +25,6 @@ if os.path.exists(HISTORY_FILE):
 else:
     past_topics = "None (This is the brand-new first post)."
 
-# 3. Target Affiliate Links
 AFFILIATE_LINKS = {
     "AI_TOOL": "https://www.example-affiliate.com/tracking-id-1",
     "BOOK_REC": "https://www.example-affiliate.com/tracking-id-2"
@@ -38,7 +38,7 @@ To avoid duplication, here are the topics you have ALREADY covered:
 ---
 
 Your Task:
-1. Identify a highly specific, narrow troubleshooting problem, error message, or system limitation that professional digital creators or freelancers face this week (e.g., issues inside tools like DaVinci Resolve, Canva, Premiere Pro, or popular automated marketing platforms). Pick a topic NOT listed in the history above.
+1. Identify a highly specific, narrow troubleshooting problem, error message, or system limitation that professional digital creators or freelancers face online (e.g., issues inside tools like DaVinci Resolve, Canva, Premiere Pro, or popular automated marketing platforms). Pick a topic NOT listed in the history above.
 2. Write a comprehensive, 1,200-word highly actionable troubleshooting guide about it in raw HTML.
 
 Formatting Guidelines:
@@ -49,15 +49,19 @@ Formatting Guidelines:
 - Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution to the problem.
 """
 
-print("Querying Gemini Engine with Live Search Grounding...")
+print("Querying Gemini 2.5 Engine with Search Grounding enabled...")
 try:
-    response = model.generate_content(
-        prompt,
-        tools=[{"google_search": {}}]
+    # Use the current industry standard model with the modern search tool call structure
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            tools=[types.Tool(google_search=types.GoogleSearch())]
+        )
     )
     raw_text = response.text
 except Exception as e:
-    print(f"CRITICAL ERROR: Gemini API call failed: {e}")
+    print(f"CRITICAL ERROR: Gemini modern API call failed: {e}")
     sys.exit(1)
 
 # Clean up any potential markdown text containers from the response
