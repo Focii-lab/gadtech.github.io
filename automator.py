@@ -1,60 +1,93 @@
 import os
 import re
+import sys
 import google.generativeai as genai
 
-# 1. Initialize Gemini using the hidden secret key
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+# 1. Error-proof Secret Check
+api_key = os.environ.get("GEMINI_API_KEY")
+if not api_key:
+    print("CRITICAL ERROR: 'GEMINI_API_KEY' secret is missing or not found in GitHub Secrets.")
+    sys.exit(1)
 
-# Use the default free workhorse model for text composition
-model = genai.GenerativeModel('gemini-2.5-flash')
+try:
+    genai.configure(api_key=api_key)
+    # Using the standardized model name for stability
+    model = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    print(f"CRITICAL ERROR: Failed to configure Gemini API client: {e}")
+    sys.exit(1)
 
-# 2. Your Static Affiliate Links (Update these with your real ones later)
+# History ledger configuration
+HISTORY_FILE = "past_topics.txt"
+if os.path.exists(HISTORY_FILE):
+    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+        past_topics = f.read().strip()
+else:
+    past_topics = "None (This is the first post)."
+
 AFFILIATE_LINKS = {
     "AI_TOOL": "https://www.example-affiliate.com/tracking-id-1",
     "BOOK_REC": "https://www.example-affiliate.com/tracking-id-2"
 }
 
-# 3. Secure Narrow-Intent Prompting
-prompt = """
-Act as a world-class technology blogger and SEO specialist. 
-Identify a highly specific, low-competition, long-tail problem-solving keyword in the 'AI tools for freelancers' or 'productivity software hacks' niche.
+prompt = f"""
+Context: You are a B2B SaaS optimization blogger. To avoid duplication, here are the topics you have ALREADY written about:
+---
+{past_topics}
+---
 
-Write a beautifully structured, comprehensive blog post about it in clean, standard HTML.
-Follow these exact formatting rules:
-- Do NOT wrap the code in ```html blocks. Output raw text starting directly with the HTML tags.
-- Use a single <h1> for the main title at the very top.
-- Immediately follow the <h1> with a 50-word bolded paragraph (<p><b>...</b></p>) that directly answers the main user query for AI snippet optimization.
-- Use clean <h2> and <h3> tags for sections. No markdown styling (* or #) inside the HTML.
-- Include at least one step-by-step list (<ol><li>) or a structured comparison list.
-- Naturally insert these exact text anchors where appropriate: [LINK:AI_TOOL] or [LINK:BOOK_REC].
+Your Task (Step-by-Step):
+1. Identify a highly specific, recent troubleshooting problem, error message, or narrow software alternative that freelancers, video editors, or marketers face online. Pick a niche topic NOT covered in the list above.
+2. Write an explicit, deeply technical 1,200-word problem-solving guide about it formatted in raw HTML.
 
-Make the content deeply actionable, eliminating generic fluff words. Include an introductory header section using clean CSS inline styling for a premium look.
+Formatting Guidelines:
+- Do NOT wrap the output code in markdown blocks like ```html. Start directly with the HTML tags.
+- Use a single <h1> for the main title at the top.
+- Follow the <h1> immediately with a 50-word bolded paragraph (<p><b>...</b></p>) that answers the search query directly for featured snippet optimization.
+- Use clean <h2> and <h3> tags for headers.
+- Naturally insert the anchor text [LINK:AI_TOOL] as the primary software solution to the problem.
 """
 
-print("Requesting content from Gemini...")
-response = model.generate_content(prompt)
-raw_html = response.text
+print("Requesting grounded content generation from Gemini API...")
+try:
+    # Call the core model with integrated search capabilities enabled
+    response = model.generate_content(
+        prompt,
+        tools=[{"google_search": {}}]
+    )
+    raw_text = response.text
+except Exception as e:
+    print(f"CRITICAL ERROR: Gemini API generation failed: {e}")
+    sys.exit(1)
 
-# 4. Clean up any accidental markdown wrapper artifacts from the AI response
-clean_html = re.sub(r'^
-```html\s*|\s*```$', '', raw_html.strip())
+# 2. Advanced Regex Cleanup for Markdown Wrappers
+clean_html = re.sub(r'(^```html\s*|^```xml\s*|^```\s*)|(\s*```$)', '', raw_text.strip(), flags=re.IGNORECASE)
 
-# 5. Automatically find and replace placeholders with your functional affiliate links
+# 3. Dynamic Link Replacements
 for placeholder, real_link in AFFILIATE_LINKS.items():
     link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold;">Check out our recommended resource here</a>'
     clean_html = clean_html.replace(f"[LINK:{placeholder}]", link_html)
 
-# 6. Extract the safe title string to generate a clean filename
+# 4. Fallback File Target Management
 title_match = re.search(r'<h1>(.*?)</h1>', clean_html)
 if title_match:
-    slug = title_match.group(1).lower()
+    extracted_title = title_match.group(1)
+    slug = extracted_title.lower()
     slug = re.sub(r'[^a-z0-9\s-]', '', slug)
     filename = re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
 else:
-    filename = "latest-update.html"
+    extracted_title = "Latest Software Fix Update"
+    filename = "latest-software-fix.html"
+    # Inject fallback header structure if missing completely to keep the static index rendering valid
+    clean_html = f"<h1>{extracted_title}</h1>\n" + clean_html
 
-# 7. Write out the static standalone webpage file
-with open(filename, "w", encoding="utf-8") as f:
-    f.write(clean_html)
+try:
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(clean_html)
 
-print(f"Success! Generated file saved locally as: {filename}")
+    with open(HISTORY_FILE, "a", encoding="utf-8") as f:
+        f.write(extracted_title + "\n")
+    print(f"File process completed successfully. Saved output as: {filename}")
+except Exception as e:
+    print(f"CRITICAL ERROR: Failed to write output files to workspace: {e}")
+    sys.exit(1)
