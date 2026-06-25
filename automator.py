@@ -11,7 +11,6 @@ if not api_key:
     sys.exit(1)
 
 try:
-    # Initialize using the modern SDK client wrapper
     client = genai.Client(api_key=api_key)
 except Exception as e:
     print(f"CRITICAL ERROR: Failed to initialize GenAI Client: {e}")
@@ -30,6 +29,7 @@ AFFILIATE_LINKS = {
     "BOOK_REC": "https://www.example-affiliate.com/tracking-id-2"
 }
 
+# Note the doubled {{ }} around the CSS properties below to prevent Python f-string parsing errors
 prompt = f"""
 Context: You are an expert B2B SaaS optimization blogger. 
 To avoid duplication, here are the topics you have ALREADY covered:
@@ -43,16 +43,15 @@ Your Task:
 
 Formatting Guidelines:
 - Do NOT wrap your output in markdown code blocks like ```html. Start and end directly with HTML tags.
-- Inject a global style block at the very top: <style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; } h1, h2, h3 { color: #111; margin-top: 1.5em; } a { color: #0066cc; }</style>
+- Inject this global style block at the very top: <style>body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }} h1, h2, h3 {{ color: #111; margin-top: 1.5em; }} a {{ color: #0066cc; }}</style>
 - Use a single <h1> tag for your main headline at the top.
-- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1>.
+- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1> to target Google's featured snippets.
 - Use clean <h2> and <h3> tags for structured subheaders.
 - Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution.
 """
 
 print("Querying Gemini 2.5 Engine with Search Grounding enabled...")
 try:
-    # Use the current industry standard model with the modern search tool call structure
     response = client.models.generate_content(
         model='gemini-2.5-flash',
         contents=prompt,
