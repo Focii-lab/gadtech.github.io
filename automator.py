@@ -93,7 +93,7 @@ for placeholder, real_link in AFFILIATE_LINKS.items():
     link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold; text-decoration: underline;">Check out our recommended optimization tool here</a>'
     clean_html = clean_html.replace(f"[LINK:{placeholder}]", link_html)
 
-# Extract Title and determine structural injection
+# Extract Title and execute structural injection
 title_match = re.search(r'<h1>(.*?)</h1>', clean_html)
 if title_match:
     extracted_title = title_match.group(1).strip()
@@ -102,13 +102,16 @@ else:
     extracted_title = "Latest Automation Update"
     filename = "latest-automation-update.html"
 
-# 1. Bulletproof Hero Image Insertion (hooks onto the raw tag closure with cleaned URL)
+# 1. FORCED ONLY ONCE: Inject Hero Image immediately below the FIRST closing <h1> tag
 hero_image_injection = '\n<img src="[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80)" class="blog-hero" alt="Technical Diagnostic Workspace">\n'
 clean_html = clean_html.replace("</h1>", f"</h1>{hero_image_injection}", 1)
 
-# 2. Bulletproof Inline Graphic Insertion (hooks onto the first subheader tag closure with cleaned URL)
+# 2. FORCED ONLY ONCE: Inject Inline Graphic immediately below the FIRST closing <h2> tag
 inline_image_injection = '\n<img src="[https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80](https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80)" class="inline-ill" alt="System Data Analytics Visualization">\n<p class="img-caption">Automated diagnostics telemetry log analysis mapping system metrics.</p>\n'
 clean_html = clean_html.replace("</h2>", f"</h2>{inline_image_injection}", 1)
+
+# 3. SAFETY STRIPPER: Cleans out any nested brackets like [https://...] that break browser image parsing
+clean_html = clean_html.replace('src="[', 'src="').replace(']"', '"')
 
 try:
     with open(filename, "w", encoding="utf-8") as f:
