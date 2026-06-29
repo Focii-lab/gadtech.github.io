@@ -12,3 +12,4 @@ DaVinci Resolve Playback Stuttering and Lag: Your Definitive Troubleshooting Gui
 Solving Unexpected Color Shifts and Gamma Issues in DaVinci Resolve Exports
 Adobe Premiere Pro 'Media Offline' or 'Missing Media' Error: Your Definitive Guide to Relinking and Preventing Lost Footage
 After Effects "Out of Memory" or "Disk Full" Errors During Render: Your Definitive Troubleshooting Guide
+DaVinci Resolve Fusion Composition Black Screen or Rendering Glitches: Your Expert Troubleshooting Guide
