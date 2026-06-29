@@ -35,17 +35,16 @@ AFFILIATE_LINKS = {
     "BOOK_REC": "https://www.example-affiliate.com/tracking-id-2"
 }
 
-# Helper function to convert dynamic titles to identical URL filenames
 def generate_slug(title_string):
     slug = title_string.lower()
     slug = re.sub(r'[^a-z0-9\s-]', '', slug)
     return re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
 
 # ==========================================
-# 3. GENERATE THE NEW POST
+# 3. GENERATE THE NEW POST (FORTIFIED PROMPT)
 # ==========================================
 prompt = f"""
-Context: You are an expert B2B SaaS optimization blogger writing technical articles for digital creators. 
+Context: You are an expert B2B SaaS optimization blogger writing highly technical articles for digital creators. 
 To avoid duplication, here are the topics you have ALREADY covered:
 ---
 {past_topics}
@@ -55,12 +54,19 @@ Your Task:
 1. Identify a highly specific, narrow troubleshooting problem, error message, or system limitation that professional digital creators or freelancers face online (e.g., issues inside tools like DaVinci Resolve, Canva, Premiere Pro, or popular automated marketing platforms). Pick a topic NOT listed in the history above.
 2. Write a comprehensive, 1,200-word highly actionable troubleshooting guide about it in raw HTML.
 
-Formatting Guidelines:
+Formatting Guidelines (Strict Semantic HTML):
 - Do NOT wrap your output in markdown code blocks like ```html. Start and end directly with HTML tags.
 - Inject this global style block at the very top: <style>body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }} h1, h2, h3 {{ color: #111; margin-top: 1.5em; }} a {{ color: #0066cc; }}</style>
 - Use a single <h1> tag for your main headline at the top.
 - Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1>.
-- Use clean <h2> and <h3> tags for structured subheaders. Do NOT use markdown notation like ** or ## anywhere in the text.
+- Use clean <h2> and <h3> tags for structured subheaders.
+- For lists, use standard <ul> and <li> tags.
+
+CRITICAL NEGATIVE CONSTRAINTS - STAGE PERMISSION LOCK:
+- You are strictly FORBIDDEN from using any markdown formatting syntax whatsoever.
+- NEVER use double asterisks (e.g., **text**) for bold text. Use standard HTML tags like <b>text</b> or <strong>text</strong> instead.
+- NEVER use hash tags (e.g., ## or ###) for headings. Use <h2> and <h3> tags.
+- NEVER use markdown hyphens or numbers (e.g., - item or 1. item) for lists. Use <ul>, <ol>, and <li> tags.
 - Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution.
 """
 
@@ -108,16 +114,13 @@ except Exception as e:
 # ==========================================
 print("Compiling dynamic homepage index roll...")
 
-# Read the updated history file lines
 with open(HISTORY_FILE, "r", encoding="utf-8") as f:
     all_posts = [line.strip() for line in f.readlines() if line.strip()]
 
-# Filter out the placeholder initialization line if present
 all_posts = [post for post in all_posts if post != "Baseline History Init"]
 
-# Build HTML list items dynamically for every historical post
 list_items_html = ""
-for post_title in reversed(all_posts): # Latest articles first
+for post_title in reversed(all_posts):
     post_url = generate_slug(post_title)
     list_items_html += f"""
     <li style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; list-style: none;">
@@ -128,7 +131,6 @@ for post_title in reversed(all_posts): # Latest articles first
     </li>
     """
 
-# Wrap list inside a clean homepage skin shell
 index_html_content = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
