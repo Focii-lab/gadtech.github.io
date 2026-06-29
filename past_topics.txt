@@ -16,3 +16,4 @@ DaVinci Resolve Fusion Composition Black Screen or Rendering Glitches: Your Expe
 DaVinci Resolve "Codec Not Supported" Error: Your Definitive Guide to Seamless Import and Export
 DaVinci Resolve Database Not Found or Connection Failed: Your Definitive Troubleshooting Guide
 Mastering the Mercury Playback Engine: Troubleshooting GPU Acceleration Failures in Adobe Premiere Pro
+Canva Design Disappearing Act: Troubleshooting Unsaved Changes, Loading Failures, and Element Shenanigans
