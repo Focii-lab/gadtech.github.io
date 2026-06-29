@@ -98,25 +98,24 @@ title_match = re.search(r'<h1>(.*?)</h1>', clean_html)
 if title_match:
     extracted_title = title_match.group(1).strip()
     filename = generate_slug(extracted_title)
-    
-    # Force injection of Hero Image immediately under the closing <h1> tag
-    hero_img_tag = f'<h1>{extracted_title}</h1>\n<img src="[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80)" class="blog-hero" alt="{extracted_title}">'
-    clean_html = clean_html.replace(f'<h1>{title_match.group(1)}</h1>', hero_img_tag)
 else:
     extracted_title = "Latest Automation Update"
     filename = "latest-automation-update.html"
-    clean_html = f"<h1>{extracted_title}</h1>\n<img src='[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80)' class='blog-hero'>\n" + clean_html
 
-# Inject an illustrative diagnostic graphic right before the first h2 subheader to break up walls of text cleanly
-inline_img_html = '\n<img src="[https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80](https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80)" class="inline-ill" alt="System Diagnostics Analysis">\n<p class="img-caption">Core system resource allocation and diagnostic metrics.</p>\n<h2>'
-clean_html = clean_html.replace('<h2>', inline_img_html, 1)
+# 1. Bulletproof Hero Image Insertion (hooks onto the raw tag closure with cleaned URL)
+hero_image_injection = '\n<img src="[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80)" class="blog-hero" alt="Technical Diagnostic Workspace">\n'
+clean_html = clean_html.replace("</h1>", f"</h1>{hero_image_injection}", 1)
+
+# 2. Bulletproof Inline Graphic Insertion (hooks onto the first subheader tag closure with cleaned URL)
+inline_image_injection = '\n<img src="[https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80](https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80)" class="inline-ill" alt="System Data Analytics Visualization">\n<p class="img-caption">Automated diagnostics telemetry log analysis mapping system metrics.</p>\n'
+clean_html = clean_html.replace("</h2>", f"</h2>{inline_image_injection}", 1)
 
 try:
     with open(filename, "w", encoding="utf-8") as f:
         f.write(clean_html)
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(extracted_title + "\n")
-    print(f"SUCCESS: Article written with structural image injection as: {filename}")
+    print(f"SUCCESS: New media-rich article written cleanly as: {filename}")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed writing article to disk: {e}")
     sys.exit(1)
