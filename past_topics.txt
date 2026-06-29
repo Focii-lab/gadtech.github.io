@@ -18,3 +18,4 @@ DaVinci Resolve Database Not Found or Connection Failed: Your Definitive Trouble
 Mastering the Mercury Playback Engine: Troubleshooting GPU Acceleration Failures in Adobe Premiere Pro
 Canva Design Disappearing Act: Troubleshooting Unsaved Changes, Loading Failures, and Element Shenanigans
 Adobe Audition CPU Spikes and Performance Lag: Your Definitive Troubleshooting Guide for Digital Audio Creators
+Adobe Premiere Pro 'Low-Level Exception' Errors: Your Definitive Troubleshooting Guide
