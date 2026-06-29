@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import urllib.parse
 from google import genai
 from google.genai import types
 
@@ -42,7 +41,7 @@ def generate_slug(title_string):
     return re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
 
 # ==========================================
-# 3. GENERATE THE NEW POST (DYNAMIC IMAGE ARCHITECTURE)
+# 3. GENERATE THE NEW POST
 # ==========================================
 prompt = f"""
 Context: You are an expert B2B SaaS optimization blogger writing highly technical articles for digital creators. 
@@ -55,7 +54,7 @@ Your Task:
 1. Identify a highly specific, narrow troubleshooting problem, error message, or system limitation that professional digital creators or freelancers face online (e.g., issues inside tools like DaVinci Resolve, Canva, Premiere Pro, or popular automated marketing platforms). Pick a topic NOT listed in the history above.
 2. Write a comprehensive, 1,200-word highly actionable troubleshooting guide about it in raw HTML.
 
-Formatting Guidelines (Strict Semantic HTML & Layout Architecture):
+Formatting Guidelines (Strict Semantic HTML):
 - Do NOT wrap your output in markdown code blocks like ```html. Start and end directly with HTML tags.
 - Inject this global style block at the very top: 
   <style>
@@ -68,13 +67,8 @@ Formatting Guidelines (Strict Semantic HTML & Layout Architecture):
   </style>
 - Use a single <h1> tag for your main headline at the top.
 - Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1>.
-- Leave the exact placeholder string [HERO_IMAGE] right after the summary paragraph.
 - Use clean <h2> and <h3> tags for structured subheaders.
-- Deep within one of your major diagnostic sections, leave the exact placeholder string [INLINE_IMAGE] followed on the next line by a descriptive caption wrapped in <p class="img-caption">...</p> to match the layout context.
-- For lists, use standard <ul> and <li> tags.
-
-CRITICAL NEGATIVE CONSTRAINTS:
-- You are strictly FORBIDDEN from using any markdown formatting syntax whatsoever. Do NOT use ** or ##.
+- For lists, use standard <ul> and <li> tags. Do NOT use markdown notation like ** or ## anywhere.
 - Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution.
 """
 
@@ -89,7 +83,7 @@ try:
     )
     raw_text = response.text
 except Exception as e:
-    print(f"CRITICAL ERROR: Gemini modern API call failed: {e}")
+    print(f"CRITICAL ERROR: Gemini API call failed: {e}")
     sys.exit(1)
 
 clean_html = re.sub(r'(^```html\s*|^```xml\s*|^```\s*)|(\s*```$)', '', raw_text.strip(), flags=re.IGNORECASE)
@@ -99,42 +93,30 @@ for placeholder, real_link in AFFILIATE_LINKS.items():
     link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold; text-decoration: underline;">Check out our recommended optimization tool here</a>'
     clean_html = clean_html.replace(f"[LINK:{placeholder}]", link_html)
 
-# Extract Title and determine dynamic contextual keyword targets
+# Extract Title and determine structural injection
 title_match = re.search(r'<h1>(.*?)</h1>', clean_html)
 if title_match:
     extracted_title = title_match.group(1).strip()
     filename = generate_slug(extracted_title)
     
-    # Extract the core app name or context for highly targeted images (e.g., premiere, davinci, canva)
-    words = re.sub(r'[^a-zA-Z0-9\s]', '', extracted_title).lower().split()
-    search_keywords = "workspace"
-    for core_app in ['premiere', 'davinci', 'canva', 'illustrator', 'photoshop', 'figma', 'email', 'marketing']:
-        if core_app in words:
-            search_keywords = core_app if core_app != 'email' else 'marketing'
-            break
+    # Force injection of Hero Image immediately under the closing <h1> tag
+    hero_img_tag = f'<h1>{extracted_title}</h1>\n<img src="[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80)" class="blog-hero" alt="{extracted_title}">'
+    clean_html = clean_html.replace(f'<h1>{title_match.group(1)}</h1>', hero_img_tag)
 else:
     extracted_title = "Latest Automation Update"
     filename = "latest-automation-update.html"
-    clean_html = f"<h1>{extracted_title}</h1>\n" + clean_html
-    search_keywords = "technology"
+    clean_html = f"<h1>{extracted_title}</h1>\n<img src='[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80)' class='blog-hero'>\n" + clean_html
 
-# Dynamically construct robust URL paths using Unsplash source keywords
-hero_query = urllib.parse.quote(f"{search_keywords},tech")
-inline_query = urllib.parse.quote(f"analytics,code")
-
-hero_img_tag = f'<img src="[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80&sig=1](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&h=500&q=80&sig=1)" class="blog-hero" alt="{extracted_title}">'
-inline_img_tag = f'<img src="[https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80&sig=2](https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80&sig=2)" class="inline-ill" alt="Diagnostic Technical Data">'
-
-# Inject the fixed image HTML layout strings directly into placeholders
-clean_html = clean_html.replace("[HERO_IMAGE]", hero_img_tag)
-clean_html = clean_html.replace("[INLINE_IMAGE]", inline_img_tag)
+# Inject an illustrative diagnostic graphic right before the first h2 subheader to break up walls of text cleanly
+inline_img_html = '\n<img src="[https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80](https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80)" class="inline-ill" alt="System Diagnostics Analysis">\n<p class="img-caption">Core system resource allocation and diagnostic metrics.</p>\n<h2>'
+clean_html = clean_html.replace('<h2>', inline_img_html, 1)
 
 try:
     with open(filename, "w", encoding="utf-8") as f:
         f.write(clean_html)
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(extracted_title + "\n")
-    print(f"SUCCESS: Article written cleanly with dynamic image engine as: {filename}")
+    print(f"SUCCESS: Article written with structural image injection as: {filename}")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed writing article to disk: {e}")
     sys.exit(1)
