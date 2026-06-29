@@ -41,7 +41,7 @@ def generate_slug(title_string):
     return re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
 
 # ==========================================
-# 3. GENERATE THE NEW POST (FORTIFIED PROMPT)
+# 3. GENERATE THE NEW POST (IMAGE-ENABLED PROMPT)
 # ==========================================
 prompt = f"""
 Context: You are an expert B2B SaaS optimization blogger writing highly technical articles for digital creators. 
@@ -54,23 +54,34 @@ Your Task:
 1. Identify a highly specific, narrow troubleshooting problem, error message, or system limitation that professional digital creators or freelancers face online (e.g., issues inside tools like DaVinci Resolve, Canva, Premiere Pro, or popular automated marketing platforms). Pick a topic NOT listed in the history above.
 2. Write a comprehensive, 1,200-word highly actionable troubleshooting guide about it in raw HTML.
 
-Formatting Guidelines (Strict Semantic HTML):
+Formatting Guidelines (Strict Semantic HTML & Layout Architecture):
 - Do NOT wrap your output in markdown code blocks like ```html. Start and end directly with HTML tags.
-- Inject this global style block at the very top: <style>body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }} h1, h2, h3 {{ color: #111; margin-top: 1.5em; }} a {{ color: #0066cc; }}</style>
+- Inject this global style block at the very top: 
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #333; }} 
+    h1, h2, h3 {{ color: #111; margin-top: 1.5em; }} 
+    a {{ color: #0066cc; }}
+    img.blog-hero {{ width: 100%; max-height: 400px; object-fit: cover; border-radius: 8px; margin: 20px 0; }}
+    img.inline-ill {{ width: 100%; max-height: 300px; object-fit: cover; border-radius: 6px; margin: 25px 0; border: 1px solid #eee; }}
+    .img-caption {{ text-align: center; font-size: 0.85rem; color: #666; margin-top: -15px; margin-bottom: 25px; font-style: italic; }}
+  </style>
 - Use a single <h1> tag for your main headline at the top.
-- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the <h1>.
+- IMMEDIATELY below the <h1>, include a high-quality relevant hero image using this source structure: 
+  <img src="[https://images.unsplash.com/photo-1542744094-2ab25be78b90?auto=format&fit=crop&w=1200&q=80](https://images.unsplash.com/photo-1542744094-2ab25be78b90?auto=format&fit=crop&w=1200&q=80)" class="blog-hero" alt="Technical Workspace Optimization">
+- Place a 50-word bolded summary paragraph (<p><b>...</b></p>) immediately under the hero image.
 - Use clean <h2> and <h3> tags for structured subheaders.
+- Deep within one of your major step-by-step diagnostic sections, naturally embed a second illustrative placeholder graphic to break up text walls:
+  <img src="[https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80](https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80)" class="inline-ill" alt="System Diagnostics Analysis">
+  <p class="img-caption">Visualizing system memory allocations during core processing bottlenecks.</p>
 - For lists, use standard <ul> and <li> tags.
 
-CRITICAL NEGATIVE CONSTRAINTS - STAGE PERMISSION LOCK:
+CRITICAL NEGATIVE CONSTRAINTS:
 - You are strictly FORBIDDEN from using any markdown formatting syntax whatsoever.
-- NEVER use double asterisks (e.g., **text**) for bold text. Use standard HTML tags like <b>text</b> or <strong>text</strong> instead.
-- NEVER use hash tags (e.g., ## or ###) for headings. Use <h2> and <h3> tags.
-- NEVER use markdown hyphens or numbers (e.g., - item or 1. item) for lists. Use <ul>, <ol>, and <li> tags.
+- NEVER use double asterisks (e.g., **text**). Use standard HTML tags like <b>text</b>.
 - Naturally weave the anchor text [LINK:AI_TOOL] as the premium recommended solution.
 """
 
-print("Querying Gemini 2.5 Engine with Search Grounding enabled...")
+print("Querying Gemini 2.5 Engine with Search Grounding & Image Parameters...")
 try:
     response = client.models.generate_content(
         model='gemini-2.5-flash',
