@@ -11,3 +11,4 @@ Conquering the "Dynamic Link Offline" and "Failed to Connect" Errors in Adobe Pr
 DaVinci Resolve Playback Stuttering and Lag: Your Definitive Troubleshooting Guide for Digital Creators
 Solving Unexpected Color Shifts and Gamma Issues in DaVinci Resolve Exports
 Adobe Premiere Pro 'Media Offline' or 'Missing Media' Error: Your Definitive Guide to Relinking and Preventing Lost Footage
+After Effects "Out of Memory" or "Disk Full" Errors During Render: Your Definitive Troubleshooting Guide
