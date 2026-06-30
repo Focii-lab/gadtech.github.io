@@ -20,3 +20,4 @@ Canva Design Disappearing Act: Troubleshooting Unsaved Changes, Loading Failures
 Adobe Audition CPU Spikes and Performance Lag: Your Definitive Troubleshooting Guide for Digital Audio Creators
 Adobe Premiere Pro 'Low-Level Exception' Errors: Your Definitive Troubleshooting Guide
 DaVinci Resolve Render Flickering, Green Frames, or Artifacts: Your Definitive Troubleshooting Guide
+Conquering the Black Screen: Troubleshooting Cycles GPU Rendering Failures in Blender
