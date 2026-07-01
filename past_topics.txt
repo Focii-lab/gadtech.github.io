@@ -1,1 +1,2 @@
 
+Untangling Premiere Pro's "Low-Level Exception" and GPU Memory Overflows
