@@ -1,3 +1,1 @@
 
-Taming Premiere Pro's Export Nightmares: Conquering "Error Compiling Movie"
-Fixing DaVinci Resolve's Frustrating "GPU Memory Full" Errors
