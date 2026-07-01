@@ -1,7 +1,7 @@
 import os
 import re
 import sys
-import time
+import urllib.parse
 from google import genai
 from google.genai import types
 
@@ -41,8 +41,9 @@ def generate_slug(title_string):
     return re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
 
 # ==========================================
-# 3. GENERATE HUMANIZED CORE CONTENT
+# PHASE 1: TEXT GENERATION (HUMANIZED CORE)
 # ==========================================
+print("LAUNCHING PHASE 1: Text Engine...")
 prompt = f"""
 Context: You are a Senior Support Engineer writing a troubleshooting column for digital freelancers. Your tone is conversational, authoritative, and direct—no robotic filler phrases.
 
@@ -53,7 +54,7 @@ To avoid duplication, here are the topics you have ALREADY covered:
 
 Your Task:
 1. Select a highly narrow troubleshooting problem, error code, or system limitation that digital creators face inside popular platforms (e.g., DaVinci Resolve, Canva, Adobe Suite, Premiere, Figma).
-2. Write a comprehensive, 1,200-word deep-dive manual to resolve the issue.
+2. Write a comprehensive, 1,200-word highly actionable troubleshooting guide about it.
 
 Formatting Rules (Strict Markdown Protocol):
 - Begin your response with a single '# ' style title block (e.g., # Fixing Premiere Pro GPU Overflows).
@@ -63,7 +64,6 @@ Formatting Rules (Strict Markdown Protocol):
 - Naturally weave the placeholder link [LINK:AI_TOOL] into your solution steps.
 """
 
-print("Querying Gemini 2.5 Engine...")
 try:
     response = client.models.generate_content(
         model='gemini-2.5-flash',
@@ -77,10 +77,9 @@ except Exception as e:
     print(f"CRITICAL ERROR: Gemini API call failed: {e}")
     sys.exit(1)
 
-# Clean out any structural system markdown blocks if generated
 raw_markdown = re.sub(r'(^```html\s*|^```markdown\s*|^```\s*)|(\s*```$)', '', raw_markdown.strip(), flags=re.IGNORECASE)
 
-# Extract Title safely from Markdown header (# Title) or HTML h1 tag
+# Extract Title safely from Markdown header
 title_match = re.search(r'^#\s+(.*?)$', raw_markdown, re.MULTILINE)
 if not title_match:
     title_match = re.search(r'<h1>(.*?)</h1>', raw_markdown, re.IGNORECASE)
@@ -90,15 +89,11 @@ filename = generate_slug(extracted_title)
 
 # Convert Markdown elements to pure HTML tags seamlessly
 def convert_markdown_to_html(text):
-    # Remove the main title from the body text
     text = re.sub(r'^#\s+.*?$', '', text, flags=re.MULTILINE)
-    
-    # Process headers
     text = re.sub(r'^##\s+(.*?)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
     text = re.sub(r'^###\s+(.*?)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
     text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
     
-    # Process lists handling both '-' and '*' variants found in 1000186838.jpg
     processed_lines = []
     in_list = False
     for line in text.split('\n'):
@@ -123,18 +118,32 @@ def convert_markdown_to_html(text):
 
 html_body_content = convert_markdown_to_html(raw_markdown)
 
-# Inject partner link references
 for placeholder, real_link in AFFILIATE_LINKS.items():
     link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold; text-decoration: underline;">Check out our recommended optimization tool here</a>'
     html_body_content = html_body_content.replace(f"[LINK:{placeholder}]", link_html)
 
 # ==========================================
-# 4. MASTER FRAMEWORK ASSEMBLY (MOBILE-FIRST UI)
+# PHASE 2: CONTEXT ANALYSIS & DYNAMIC MEDIA SELECTION
 # ==========================================
-# Verified CDN asset fallback parameters guarantee live imagery without timeout drops
-hero_img_url = "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80"
-inline_img_url = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80"
+print("LAUNCHING PHASE 2: Media Compilation Engine...")
 
+# Scan title strings to determine the target application environment context
+app_keywords = ['premiere', 'davinci', 'canva', 'illustrator', 'photoshop', 'figma', 'after-effects', 'wordpress', 'software']
+detected_app = "technology"
+
+for keyword in app_keywords:
+    if keyword in extracted_title.lower():
+        detected_app = keyword
+        break
+
+# Dynamically construct unique, non-hardcoded Source URLs targeting the exact specific app topic text context
+hero_img_url = f"https://images.unsplash.com/featured/1200x630/?{urllib.parse.quote(detected_app)},workspace"
+inline_img_url = f"https://images.unsplash.com/featured/800x450/?{urllib.parse.quote(detected_app)},analytics"
+
+# ==========================================
+# PHASE 3: MASTER COMPILATION ASSEMBLY
+# ==========================================
+print("LAUNCHING PHASE 3: Compilation Rendering...")
 full_page_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -168,14 +177,14 @@ full_page_html = f"""<!DOCTYPE html>
     <main>
         <h1>{extracted_title}</h1>
         <div class="img-container">
-            <img src="{hero_img_url}" class="hero" alt="Technical Workspace Optimization Processing">
+            <img src="{hero_img_url}" class="hero" alt="{extracted_title} System Diagnostic View">
         </div>
         
         {html_body_content}
         
         <div class="img-container">
             <img src="{inline_img_url}" class="inline" alt="Diagnostic Console Tracking Layout">
-            <p class="caption">System diagnostics data verification architecture log telemetry metrics panel.</p>
+            <p class="caption">System diagnostics data layer confirmation matrix configuration for {detected_app}.</p>
         </div>
     </main>
 </body>
@@ -187,7 +196,7 @@ try:
         f.write(full_page_html)
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(extracted_title + "\n")
-    print(f"SUCCESS: Generated responsive article layout: {filename}")
+    print(f"SUCCESS: Decoupled programmatic phase execution completed for: {filename}")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed saving article: {e}")
     sys.exit(1)
@@ -252,7 +261,7 @@ index_html_content = f"""<!DOCTYPE html>
 try:
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(index_html_content)
-    print("SUCCESS: Homepage index updated successfully!")
+    print("SUCCESS: Homepage updated via split phase protocol!")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed to write homepage: {e}")
     sys.exit(1)
