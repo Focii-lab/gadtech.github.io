@@ -6,22 +6,19 @@ from google import genai
 from google.genai import types
 
 # ==========================================
-# 1. INITIALIZATION & SECURITY CHECK
+# 0. SAFETY CONTROLS & INITIALIZATION
 # ==========================================
+# Set to True to test GitHub Actions and CSS without burning Gemini API quota!
+# Set to False to run the real AI API calls.
+TEST_MODE = False  
+
 api_key = os.environ.get("GEMINI_API_KEY")
-if not api_key:
+if not TEST_MODE and not api_key:
     print("CRITICAL ERROR: 'GEMINI_API_KEY' secret is missing.")
     sys.exit(1)
 
-try:
-    client = genai.Client(api_key=api_key)
-except Exception as e:
-    print(f"CRITICAL ERROR: Failed to initialize GenAI Client: {e}")
-    sys.exit(1)
+client = genai.Client(api_key=api_key) if not TEST_MODE else None
 
-# ==========================================
-# 2. FILE PATH DATA LAYERS
-# ==========================================
 HISTORY_FILE = "past_topics.txt"
 INDEX_FILE = "index.html"
 
@@ -41,66 +38,100 @@ def generate_slug(title_string):
     return re.sub(r'[\s-]+', '-', slug).strip('-') + ".html"
 
 # ==========================================
-# PHASE 1: TEXT GENERATION (HUMANIZED CORE)
+# PHASE 1: THE STRATEGIST (Call 1)
 # ==========================================
-print("LAUNCHING PHASE 1: Text Engine...")
-prompt = f"""
-Context: You are a Senior Support Engineer writing a troubleshooting column for digital freelancers. Your tone is conversational, authoritative, and direct—no robotic filler phrases.
+print("LAUNCHING PHASE 1: The Strategist (Intent & Outline)...")
 
-To avoid duplication, here are the topics you have ALREADY covered:
----
-{past_topics}
----
+call_1_prompt = f"""
+Role: Principal SEO Strategist for a B2B SaaS Optimization Blog.
+Task: Define the architecture for a highly technical troubleshooting guide aimed at digital creators.
+Past Topics to AVOID: {past_topics}
 
-Your Task:
-1. Select a highly narrow troubleshooting problem, error code, or system limitation that digital creators face inside popular platforms (e.g., DaVinci Resolve, Canva, Adobe Suite, Premiere, Figma).
-2. Write a comprehensive, 1,200-word highly actionable troubleshooting guide about it.
+Create a strict outline for a new article. The topic must be at the intersection of complex software (e.g., Premiere, Canva, Figma, Stripe, Zapier) and an exact error code or automation bottleneck.
 
-Formatting Rules (Strict Markdown Protocol):
-- Begin your response with a single '# ' style title block (e.g., # Fixing Premiere Pro GPU Overflows).
-- Follow immediately with a 50-word bolded summary paragraph explaining the root issue and quick fix.
-- Use '## ' and '### ' headers for structural breakdowns.
-- Always structure lists using simple hyphens (e.g., - Step One). Do NOT use asterisks (*) for lists.
-- Naturally weave the placeholder link [LINK:AI_TOOL] into your solution steps.
+Output EXACTLY in this format, with no extra text:
+TITLE: [Article Title]
+INTENT: [1-sentence Search Intent]
+ENTITIES: [3 highly specific software versions, hardware specs, or technical terms to include]
+OUTLINE:
+- [Heading 1]
+- [Heading 2]
+- [Heading 3]
 """
 
-try:
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())]
+if not TEST_MODE:
+    try:
+        response_1 = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=call_1_prompt,
+            config=types.GenerateContentConfig(temperature=0.7)
         )
-    )
-    raw_markdown = response.text
-except Exception as e:
-    print(f"CRITICAL ERROR: Gemini API call failed: {e}")
-    sys.exit(1)
+        strategic_blueprint = response_1.text
+    except Exception as e:
+        print(f"CRITICAL ERROR in Phase 1: {e}")
+        sys.exit(1)
+else:
+    strategic_blueprint = "TITLE: Fixing Premiere Pro Error Code 160\nINTENT: Help video editors clear cache bugs.\nENTITIES: Adobe Premiere 2024, Media Cache, Scratch Disk.\nOUTLINE:\n- The Root Cause\n- Step 1: Clearing Database\n- Step 2: Rerouting Scratch"
 
-raw_markdown = re.sub(r'(^```html\s*|^```markdown\s*|^```\s*)|(\s*```$)', '', raw_markdown.strip(), flags=re.IGNORECASE)
+print("Blueprint Generated:\n", strategic_blueprint)
 
-# Extract Title safely from Markdown header
-title_match = re.search(r'^#\s+(.*?)$', raw_markdown, re.MULTILINE)
-if not title_match:
-    title_match = re.search(r'<h1>(.*?)</h1>', raw_markdown, re.IGNORECASE)
-
-extracted_title = title_match.group(1).strip() if title_match else "Advanced Optimization Matrix Guide"
+# Extract Title
+title_match = re.search(r'TITLE:\s*(.*)', strategic_blueprint)
+extracted_title = title_match.group(1).strip() if title_match else "Advanced Systems Optimization Guide"
 filename = generate_slug(extracted_title)
 
-# Convert Markdown elements to pure HTML tags seamlessly
+# ==========================================
+# PHASE 2: THE WRITER (Call 2)
+# ==========================================
+print("LAUNCHING PHASE 2: The Writer (Execution)...")
+
+call_2_prompt = f"""
+Role: Elite B2B Technical Support Engineer.
+Task: Write a 1,000-word troubleshooting guide using the following approved blueprint.
+
+Blueprint:
+{strategic_blueprint}
+
+Formatting Rules (Strict Markdown):
+1. Do NOT write a main `# Title` at the top (it is handled by the system).
+2. The very first line MUST be a blockquote starting with "> **AEO Snapshot:**" followed by a 3-sentence definitive fix.
+3. Use `## ` and `### ` for the outline headers.
+4. DO NOT use horizontal rules (`---`). Use hyphens (`- `) for lists, NEVER asterisks (`* `).
+5. At 2 logical points where a visual is needed, insert: `[AI_IMAGE: visual description of a minimal UI or tech interface]`
+6. Naturally weave `[LINK:AI_TOOL]` into a solution step.
+"""
+
+if not TEST_MODE:
+    try:
+        response_2 = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=call_2_prompt,
+            config=types.GenerateContentConfig(temperature=0.4)
+        )
+        raw_markdown = response_2.text
+    except Exception as e:
+        print(f"CRITICAL ERROR in Phase 2: {e}")
+        sys.exit(1)
+else:
+    raw_markdown = "> **AEO Snapshot:** This is a test snapshot. Premiere Pro Error 160 is caused by a corrupted media cache database. To fix it, hold shift while launching to wipe the cache, then reassign your scratch disk to an NVMe drive.\n\n## The Root Cause\nThis happens often.\n\n[AI_IMAGE: Sleek 3D render of a broken hard drive]\n\n## The Fix\n- Click here.\n- Check out [LINK:AI_TOOL] to automate this."
+
+# Parser
 def convert_markdown_to_html(text):
+    text = re.sub(r'(^```html\s*|^```markdown\s*|^```\s*)|(\s*```$)', '', text.strip(), flags=re.IGNORECASE)
     text = re.sub(r'^#\s+.*?$', '', text, flags=re.MULTILINE)
     text = re.sub(r'^##\s+(.*?)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
     text = re.sub(r'^###\s+(.*?)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
+    text = re.sub(r'^>\s*\*\*AEO Snapshot:\*\*(.*?)$', r'<div class="aeo-snippet"><strong>Quick Fix Summary:</strong>\1</div>', text, flags=re.MULTILINE)
     text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
+    text = re.sub(r'(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)', r'<em>\1</em>', text)
     
     processed_lines = []
     in_list = False
     for line in text.split('\n'):
         clean_line = line.strip()
-        if clean_line.startswith('- ') or clean_line.startswith('* '):
+        if clean_line.startswith('- '):
             if not in_list:
-                processed_lines.append('<ul>')
+                processed_lines.append('<ul class="content-list">')
                 in_list = True
             processed_lines.append(f'<li>{clean_line[2:]}</li>')
         else:
@@ -108,85 +139,130 @@ def convert_markdown_to_html(text):
                 processed_lines.append('</ul>')
                 in_list = False
             if clean_line:
-                if not clean_line.startswith('<h') and not clean_line.startswith('<u') and not clean_line.startswith('<l'):
+                if not any(clean_line.startswith(tag) for tag in ['<h', '<u', '<l', '<div class="aeo', '[AI_IMAGE:']):
                     processed_lines.append(f'<p>{clean_line}</p>')
-            else:
-                processed_lines.append('')
+                else:
+                    processed_lines.append(clean_line)
     if in_list:
         processed_lines.append('</ul>')
     return '\n'.join(processed_lines)
 
 html_body_content = convert_markdown_to_html(raw_markdown)
 
+# ==========================================
+# PHASE 3: THE ART DIRECTOR (Call 3)
+# ==========================================
+print("LAUNCHING PHASE 3: The Art Director (Metadata & Images)...")
+
+call_3_prompt = f"""
+Role: SEO and Art Director.
+Task: Read this article title: "{extracted_title}"
+Provide exactly two lines of output:
+META_DESC: [Write a 150-character highly clickable SEO meta description]
+HERO_PROMPT: [Write a highly detailed, 3D minimalist dark-mode tech aesthetic image prompt for Pollinations.ai]
+"""
+
+if not TEST_MODE:
+    try:
+        response_3 = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=call_3_prompt,
+            config=types.GenerateContentConfig(temperature=0.5)
+        )
+        metadata_raw = response_3.text
+    except Exception as e:
+        print(f"CRITICAL ERROR in Phase 3: {e}")
+        sys.exit(1)
+else:
+    metadata_raw = "META_DESC: Learn how to fix Premiere Pro Error 160 fast.\nHERO_PROMPT: Minimalist 3D render of a Premiere Pro timeline timeline, blue neon accents, dark mode."
+
+meta_match = re.search(r'META_DESC:\s*(.*)', metadata_raw)
+hero_match = re.search(r'HERO_PROMPT:\s*(.*)', metadata_raw)
+
+meta_desc = meta_match.group(1).strip() if meta_match else f"Troubleshooting guide for {extracted_title}."
+hero_ai_prompt = hero_match.group(1).strip() if hero_match else f"3D tech minimal render of {extracted_title}"
+
+# Build Hero Image URL
+encoded_hero_prompt = urllib.parse.quote(hero_ai_prompt)
+hero_img_url = f"https://image.pollinations.ai/prompt/{encoded_hero_prompt}?width=1200&height=630&nologo=true"
+
+# Parse Inline Images
+def parse_and_inject_ai_images(content):
+    image_pattern = r'\[AI_IMAGE:\s*(.*?)\]'
+    def process_match(match):
+        prompt = match.group(1).strip()
+        clean_style = f"{prompt}, minimal UI dashboard, dark mode, 3d render, 8k"
+        url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean_style)}?width=1000&height=560&nologo=true"
+        return f'<div class="img-container"><img src="{url}" class="inline-img" loading="lazy"><div class="caption">{prompt}</div></div>'
+    return re.sub(image_pattern, process_match, content)
+
+html_body_content = parse_and_inject_ai_images(html_body_content)
+
+# Inject Affiliates
 for placeholder, real_link in AFFILIATE_LINKS.items():
-    link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold; text-decoration: underline;">Check out our recommended optimization tool here</a>'
+    link_html = f'<a href="{real_link}" target="_blank" class="affiliate-button">Access the Automated Diagnostics Tool Here &rarr;</a>'
     html_body_content = html_body_content.replace(f"[LINK:{placeholder}]", link_html)
 
 # ==========================================
-# PHASE 2: CONTEXT ANALYSIS & DYNAMIC MEDIA SELECTION
+# PHASE 4: DOM ASSEMBLY & DEPLOYMENT
 # ==========================================
-print("LAUNCHING PHASE 2: Media Compilation Engine...")
+print("LAUNCHING PHASE 4: DOM Assembly...")
 
-# Scan title strings to determine the target application environment context
-app_keywords = ['premiere', 'davinci', 'canva', 'illustrator', 'photoshop', 'figma', 'after-effects', 'wordpress', 'software']
-detected_app = "technology"
-
-for keyword in app_keywords:
-    if keyword in extracted_title.lower():
-        detected_app = keyword
-        break
-
-# Dynamically construct unique, non-hardcoded Source URLs targeting the exact specific app topic text context
-hero_img_url = f"https://images.unsplash.com/featured/1200x630/?{urllib.parse.quote(detected_app)},workspace"
-inline_img_url = f"https://images.unsplash.com/featured/800x450/?{urllib.parse.quote(detected_app)},analytics"
-
-# ==========================================
-# PHASE 3: MASTER COMPILATION ASSEMBLY
-# ==========================================
-print("LAUNCHING PHASE 3: Compilation Rendering...")
 full_page_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>{extracted_title} - GadTech Labs</title>
+    <meta name="description" content="{meta_desc}">
+    <meta property="og:title" content="{extracted_title}">
+    <meta property="og:description" content="{meta_desc}">
+    <meta property="og:image" content="{hero_img_url}">
     <style>
+        :root {{ --bg: #f4f7f6; --card: #ffffff; --text: #334155; --head: #0f172a; --accent: #2563eb; --border: #e2e8f0; --aeo: #f8fafc; }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; max-width: 660px; margin: 0 auto; padding: 24px 16px; color: #2d3748; background-color: #ffffff; -webkit-text-size-adjust: 100%; }} 
-        h1 {{ color: #1a202c; font-size: 2.1rem; font-weight: 800; line-height: 1.25; margin: 10px 0 20px 0; letter-spacing: -0.5px; }}
-        h2 {{ color: #1a202c; font-size: 1.45rem; font-weight: 700; margin: 1.8em 0 12px 0; border-bottom: 2px solid #edf2f7; padding-bottom: 6px; line-height: 1.3; }}
-        h3 {{ color: #2d3748; font-size: 1.2rem; margin: 1.5em 0 8px 0; font-weight: 600; }}
-        p {{ margin-bottom: 20px; font-size: 1.05rem; color: #4a5568; word-wrap: break-word; }}
-        ul, ol {{ margin: 0 0 24px 0; padding-left: 24px; }}
-        li {{ margin-bottom: 8px; font-size: 1.05rem; color: #4a5568; line-height: 1.6; }}
-        a {{ color: #0066cc; text-decoration: none; word-break: break-all; }}
-        a:hover {{ text-decoration: underline; }}
-        .img-container {{ width: 100%; margin: 20px 0 25px 0; background: #f7fafc; border-radius: 8px; overflow: hidden; }}
-        img.hero, img.inline {{ width: 100%; height: auto; display: block; object-fit: cover; max-height: 360px; }}
-        .caption {{ text-align: center; font-size: 0.85rem; color: #718096; font-style: italic; padding: 8px 12px; background: #f7fafc; border-top: 1px solid #edf2f7; }}
-        @media (max-width: 480px) {{
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; background: var(--bg); color: var(--text); padding: 40px 20px; }}
+        .container {{ max-width: 720px; margin: 0 auto; background: var(--card); border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); overflow: hidden; border: 1px solid var(--border); }}
+        .hero-banner {{ width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--border); border-bottom: 1px solid var(--border); }}
+        .content-wrapper {{ padding: 48px; }}
+        h1 {{ color: var(--head); font-size: 2.2rem; font-weight: 800; line-height: 1.25; margin-bottom: 24px; letter-spacing: -0.02em; }}
+        h2 {{ color: var(--head); font-size: 1.5rem; font-weight: 700; margin: 2em 0 16px 0; border-bottom: 2px solid var(--border); padding-bottom: 8px; }}
+        h3 {{ color: var(--head); font-size: 1.25rem; font-weight: 600; margin: 1.5em 0 12px 0; }}
+        
+        .aeo-snippet {{ background: var(--aeo); border: 1px solid #cbd5e1; border-left: 6px solid var(--accent); padding: 24px; border-radius: 8px; margin-bottom: 32px; font-size: 1.1rem; }}
+        .aeo-snippet strong {{ display: block; color: var(--head); margin-bottom: 8px; font-size: 1.2rem; }}
+        
+        p {{ margin-bottom: 24px; font-size: 1.1rem; }}
+        p strong {{ color: var(--head); font-weight: 600; }}
+        .content-list {{ margin: 0 0 24px 0; padding-left: 24px; }}
+        .content-list li {{ margin-bottom: 10px; font-size: 1.1rem; }}
+        
+        a {{ color: var(--accent); text-decoration: none; font-weight: 500; transition: color 0.2s; }}
+        a:hover {{ text-decoration: underline; color: #1d4ed8; }}
+        .affiliate-button {{ display: inline-block; margin: 16px 0; padding: 14px 24px; background: #eff6ff; color: #1d4ed8; border-radius: 8px; font-weight: 600; text-align: center; border: 1px solid #bfdbfe; width: 100%; }}
+        .affiliate-button:hover {{ background: #dbeafe; text-decoration: none; }}
+        
+        .img-container {{ width: 100%; margin: 32px 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: #f1f5f9; }}
+        img.inline-img {{ width: 100%; height: auto; display: block; object-fit: cover; max-height: 380px; }}
+        .caption {{ font-size: 0.85rem; color: #64748b; font-style: italic; padding: 12px 16px; text-align: center; border-top: 1px solid var(--border); }}
+        
+        @media (max-width: 768px) {{
             body {{ padding: 16px 12px; }}
-            h1 {{ font-size: 1.65rem; margin-bottom: 16px; }}
-            h2 {{ font-size: 1.3rem; }}
-            p, li {{ font-size: 1rem; line-height: 1.6; }}
-            ul, ol {{ padding-left: 20px; }}
+            .content-wrapper {{ padding: 24px 20px; }}
+            h1 {{ font-size: 1.75rem; }}
+            h2 {{ font-size: 1.35rem; }}
+            p, .content-list li {{ font-size: 1.05rem; }}
         }}
     </style>
 </head>
 <body>
-    <main>
-        <h1>{extracted_title}</h1>
-        <div class="img-container">
-            <img src="{hero_img_url}" class="hero" alt="{extracted_title} System Diagnostic View">
+    <article class="container">
+        <img src="{hero_img_url}" class="hero-banner" alt="{extracted_title}" loading="lazy">
+        <div class="content-wrapper">
+            <h1>{extracted_title}</h1>
+            {html_body_content}
         </div>
-        
-        {html_body_content}
-        
-        <div class="img-container">
-            <img src="{inline_img_url}" class="inline" alt="Diagnostic Console Tracking Layout">
-            <p class="caption">System diagnostics data layer confirmation matrix configuration for {detected_app}.</p>
-        </div>
-    </main>
+    </article>
 </body>
 </html>
 """
@@ -196,7 +272,7 @@ try:
         f.write(full_page_html)
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(extracted_title + "\n")
-    print(f"SUCCESS: Decoupled programmatic phase execution completed for: {filename}")
+    print(f"SUCCESS: System UI rebuilt successfully: {filename}")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed saving article: {e}")
     sys.exit(1)
@@ -204,7 +280,7 @@ except Exception as e:
 # ==========================================
 # 5. HOMEPAGE GENERATOR
 # ==========================================
-print("Compiling mobile-responsive homepage index...")
+print("Compiling responsive homepage index...")
 
 with open(HISTORY_FILE, "r", encoding="utf-8") as f:
     all_posts = [line.strip() for line in f.readlines() if line.strip()]
@@ -215,11 +291,9 @@ list_items_html = ""
 for post_title in reversed(all_posts):
     post_url = generate_slug(post_title)
     list_items_html += f"""
-    <li style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #edf2f7; list-style: none;">
-        <h2 style="margin: 0 0 8px 0; font-size: 1.35rem; line-height: 1.3; border: none; padding: 0;">
-            <a href="{post_url}" style="color: #1a202c; text-decoration: none; font-weight: 700;">{post_title}</a>
-        </h2>
-        <a href="{post_url}" style="color: #0066cc; font-size: 0.95rem; font-weight: 500;">Read Troubleshooting Guide &rarr;</a>
+    <li class="index-item">
+        <h2><a href="{post_url}">{post_title}</a></h2>
+        <a href="{post_url}" class="read-more">Read Troubleshooting Guide &rarr;</a>
     </li>
     """
 
@@ -230,30 +304,41 @@ index_html_content = f"""<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GadTech Optimization Labs</title>
     <style>
+        :root {{ --bg: #f4f7f6; --card: #ffffff; --text: #334155; --head: #0f172a; --accent: #2563eb; --border: #e2e8f0; }}
         * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 660px; margin: 0 auto; padding: 40px 16px; color: #2d3748; }}
-        header {{ margin-bottom: 35px; border-bottom: 3px solid #1a202c; padding-bottom: 16px; }}
-        h1 {{ color: #1a202c; margin: 0; font-size: 1.9rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }}
-        p.subtitle {{ color: #718096; margin: 6px 0 0 0; font-size: 1.05rem; line-height: 1.4; }}
-        ul {{ padding: 0; margin: 0; }}
-        a:hover {{ text-decoration: underline !important; }}
-        @media (max-width: 480px) {{
-            body {{ padding: 24px 12px; }}
-            h1 {{ font-size: 1.55rem; }}
-            p.subtitle {{ font-size: 0.95rem; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: var(--bg); padding: 60px 20px; color: var(--text); }}
+        .hub-container {{ max-width: 720px; margin: 0 auto; background: var(--card); padding: 48px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid var(--border); }}
+        header {{ margin-bottom: 40px; border-bottom: 3px solid var(--head); padding-bottom: 24px; }}
+        h1 {{ color: var(--head); margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; }}
+        p.subtitle {{ color: #64748b; margin: 12px 0 0 0; font-size: 1.15rem; line-height: 1.5; }}
+        ul {{ list-style: none; }}
+        .index-item {{ margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }}
+        .index-item:last-child {{ border-bottom: none; margin-bottom: 0; padding-bottom: 0; }}
+        .index-item h2 {{ margin: 0 0 12px 0; font-size: 1.4rem; line-height: 1.3; }}
+        .index-item h2 a {{ color: var(--head); text-decoration: none; font-weight: 700; transition: color 0.2s; }}
+        .index-item h2 a:hover {{ color: var(--accent); }}
+        .read-more {{ color: var(--accent); font-size: 1rem; font-weight: 600; text-decoration: none; }}
+        .read-more:hover {{ text-decoration: underline; }}
+        @media (max-width: 768px) {{
+            body {{ padding: 16px 12px; }}
+            .hub-container {{ padding: 24px 20px; }}
+            h1 {{ font-size: 1.75rem; }}
+            .index-item h2 {{ font-size: 1.25rem; }}
         }}
     </style>
 </head>
 <body>
-    <header>
-        <h1>GadTech Optimization Labs</h1>
-        <p class="subtitle">Autonomous diagnostic solutions & troubleshooting playbooks for digital creators.</p>
-    </header>
-    <main>
-        <ul>
-            {list_items_html if list_items_html else '<li style="list-style:none; color:#718096;">No articles published yet. Check back soon!</li>'}
-        </ul>
-    </main>
+    <div class="hub-container">
+        <header>
+            <h1>GadTech Optimization Labs</h1>
+            <p class="subtitle">Autonomous diagnostic solutions & troubleshooting playbooks for digital creators.</p>
+        </header>
+        <main>
+            <ul>
+                {list_items_html if list_items_html else '<li style="color:#64748b;">No articles published yet. Check back soon!</li>'}
+            </ul>
+        </main>
+    </div>
 </body>
 </html>
 """
@@ -261,7 +346,7 @@ index_html_content = f"""<!DOCTYPE html>
 try:
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(index_html_content)
-    print("SUCCESS: Homepage updated via split phase protocol!")
+    print("SUCCESS: Homepage updated successfully!")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed to write homepage: {e}")
     sys.exit(1)
