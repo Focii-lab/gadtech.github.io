@@ -1,3 +1,1 @@
 
-Fixing Premiere Pro's 'Low-Level Exception' and 'Insufficient GPU Memory' Errors
-Demystifying Photoshop's Persistent 'Scratch Disk Full' Error
