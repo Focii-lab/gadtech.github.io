@@ -1,4 +1,1 @@
 
-Technical Diagnostic Log
-Technical Diagnostic Log
-Fixing DaVinci Resolve's "GPU Memory Full" Errors
