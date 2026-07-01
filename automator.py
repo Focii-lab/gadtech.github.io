@@ -44,7 +44,7 @@ def generate_slug(title_string):
 # 3. GENERATE HUMANIZED CORE CONTENT
 # ==========================================
 prompt = f"""
-Context: You are a Senior B2B SaaS Technical Support Engineer writing highly practical troubleshooting columns for digital freelancers and creative professionals. Your tone is conversational, authoritative, clear, and direct—devoid of robotic AI fluff, generic introductory filler sentences, or corporate jargon. Write as if you are diagnosing a problem for a peer.
+Context: You are a Senior Support Engineer writing a troubleshooting column for digital freelancers. Your tone is conversational, authoritative, and direct—no robotic filler phrases.
 
 To avoid duplication, here are the topics you have ALREADY covered:
 ---
@@ -52,19 +52,18 @@ To avoid duplication, here are the topics you have ALREADY covered:
 ---
 
 Your Task:
-1. Select a highly narrow troubleshooting problem, cryptic error code, or system limitation that digital creators face inside popular creative platforms (e.g., DaVinci Resolve, Canva, Adobe Suite, Premiere, Figma).
+1. Select a highly narrow troubleshooting problem, error code, or system limitation that digital creators face inside popular platforms (e.g., DaVinci Resolve, Canva, Adobe Suite, Premiere, Figma).
 2. Write a comprehensive, 1,200-word deep-dive manual to resolve the issue.
 
-Formatting Rules (Markdown Protocol):
-- Output your content in clean, structured Markdown format.
-- Begin your response with a single '# ' style title block (e.g., # Fixing the Graphic Glitch).
+Formatting Rules (Strict Markdown Protocol):
+- Begin your response with a single '# ' style title block (e.g., # Fixing Premiere Pro GPU Overflows).
 - Follow immediately with a 50-word bolded summary paragraph explaining the root issue and quick fix.
-- Use '## ' and '### ' headers for clear structural breakdown. 
-- Use standard markdown bolding (**text**) and bullet configurations (- item) naturally.
-- Weave the tracking placeholder [LINK:AI_TOOL] organically into your recommended solution steps.
+- Use '## ' and '### ' headers for structural breakdowns.
+- Always structure lists using simple hyphens (e.g., - Step One). Do NOT use asterisks (*) for lists.
+- Naturally weave the placeholder link [LINK:AI_TOOL] into your solution steps.
 """
 
-print("Querying Gemini 2.5 Engine with Search Grounding...")
+print("Querying Gemini 2.5 Engine...")
 try:
     response = client.models.generate_content(
         model='gemini-2.5-flash',
@@ -78,93 +77,106 @@ except Exception as e:
     print(f"CRITICAL ERROR: Gemini API call failed: {e}")
     sys.exit(1)
 
-# Helper functions to convert raw markdown to clean responsive HTML structures
-def md_to_html(text):
-    text = re.sub(r'^#\s+(.*?)$', r'<h1>\1</h1>', text, flags=re.MULTILINE)
+# Clean out any structural system markdown blocks if generated
+raw_markdown = re.sub(r'(^```html\s*|^```markdown\s*|^```\s*)|(\s*```$)', '', raw_markdown.strip(), flags=re.IGNORECASE)
+
+# Extract Title safely from Markdown header (# Title) or HTML h1 tag
+title_match = re.search(r'^#\s+(.*?)$', raw_markdown, re.MULTILINE)
+if not title_match:
+    title_match = re.search(r'<h1>(.*?)</h1>', raw_markdown, re.IGNORECASE)
+
+extracted_title = title_match.group(1).strip() if title_match else "Advanced Optimization Matrix Guide"
+filename = generate_slug(extracted_title)
+
+# Convert Markdown elements to pure HTML tags seamlessly
+def convert_markdown_to_html(text):
+    # Remove the main title from the body text
+    text = re.sub(r'^#\s+.*?$', '', text, flags=re.MULTILINE)
+    
+    # Process headers
     text = re.sub(r'^##\s+(.*?)$', r'<h2>\1</h2>', text, flags=re.MULTILINE)
     text = re.sub(r'^###\s+(.*?)$', r'<h3>\1</h3>', text, flags=re.MULTILINE)
     text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', text)
     
-    # Process bullet list blocks safely
+    # Process lists handling both '-' and '*' variants found in 1000186838.jpg
     processed_lines = []
     in_list = False
     for line in text.split('\n'):
-        if line.strip().startswith('- '):
+        clean_line = line.strip()
+        if clean_line.startswith('- ') or clean_line.startswith('* '):
             if not in_list:
                 processed_lines.append('<ul>')
                 in_list = True
-            processed_lines.append(f'<li>{line.strip()[2:]}</li>')
+            processed_lines.append(f'<li>{clean_line[2:]}</li>')
         else:
             if in_list:
                 processed_lines.append('</ul>')
                 in_list = False
-            if line.strip():
-                if not line.strip().startswith('<h') and not line.strip().startswith('<u') and not line.strip().startswith('<l'):
-                    processed_lines.append(f'<p>{line.strip()}</p>')
+            if clean_line:
+                if not clean_line.startswith('<h') and not clean_line.startswith('<u') and not clean_line.startswith('<l'):
+                    processed_lines.append(f'<p>{clean_line}</p>')
             else:
                 processed_lines.append('')
     if in_list:
         processed_lines.append('</ul>')
     return '\n'.join(processed_lines)
 
-html_body = md_to_html(raw_markdown)
+html_body_content = convert_markdown_to_html(raw_markdown)
 
-# Extract generated title
-title_match = re.search(r'<h1>(.*?)</h1>', html_body)
-extracted_title = title_match.group(1).strip() if title_match else "Technical Diagnostic Log"
-filename = generate_slug(extracted_title)
-
-# Clean out the inline h1 string to control site template positioning
-html_body = re.sub(r'<h1>.*?</h1>', '', html_body, count=1).strip()
-
-# Inject active partner monetization routes
+# Inject partner link references
 for placeholder, real_link in AFFILIATE_LINKS.items():
     link_html = f'<a href="{real_link}" target="_blank" style="color: #0066cc; font-weight: bold; text-decoration: underline;">Check out our recommended optimization tool here</a>'
-    html_body = html_body.replace(f"[LINK:{placeholder}]", link_html)
-
-# Generate unique image signatures based on epoch time parameters to prevent repeating assets
-timestamp_sig = int(time.time())
+    html_body_content = html_body_content.replace(f"[LINK:{placeholder}]", link_html)
 
 # ==========================================
-# 4. MASTER FRAMEWORK ASSEMBLY (MOBILE FIRST)
+# 4. MASTER FRAMEWORK ASSEMBLY (MOBILE-FIRST UI)
 # ==========================================
+# Verified CDN asset fallback parameters guarantee live imagery without timeout drops
+hero_img_url = "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&h=630&q=80"
+inline_img_url = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&h=450&q=80"
+
 full_page_html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>{extracted_title} - GadTech Labs</title>
     <style>
-        * {{ box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 700px; margin: 0 auto; padding: 25px 20px; color: #333; }}
-        h1 {{ color: #111; font-size: 2.25rem; font-weight: 800; line-height: 1.2; margin: 0 0 15px 0; letter-spacing: -0.5px; }}
-        h2 {{ color: #111; font-size: 1.5rem; font-weight: 700; margin: 1.6em 0 12px 0; border-bottom: 1px solid #eee; padding-bottom: 6px; }}
-        h3 {{ color: #111; font-size: 1.2rem; margin: 1.4em 0 8px 0; }}
-        p {{ margin: 0 0 20px 0; font-size: 1.05rem; text-align: justify; }}
-        ul {{ margin: 0 0 20px 0; padding-left: 20px; }}
-        li {{ margin-bottom: 6px; font-size: 1.05rem; }}
-        a {{ color: #0066cc; text-decoration: none; }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; max-width: 660px; margin: 0 auto; padding: 24px 16px; color: #2d3748; background-color: #ffffff; -webkit-text-size-adjust: 100%; }} 
+        h1 {{ color: #1a202c; font-size: 2.1rem; font-weight: 800; line-height: 1.25; margin: 10px 0 20px 0; letter-spacing: -0.5px; }}
+        h2 {{ color: #1a202c; font-size: 1.45rem; font-weight: 700; margin: 1.8em 0 12px 0; border-bottom: 2px solid #edf2f7; padding-bottom: 6px; line-height: 1.3; }}
+        h3 {{ color: #2d3748; font-size: 1.2rem; margin: 1.5em 0 8px 0; font-weight: 600; }}
+        p {{ margin-bottom: 20px; font-size: 1.05rem; color: #4a5568; word-wrap: break-word; }}
+        ul, ol {{ margin: 0 0 24px 0; padding-left: 24px; }}
+        li {{ margin-bottom: 8px; font-size: 1.05rem; color: #4a5568; line-height: 1.6; }}
+        a {{ color: #0066cc; text-decoration: none; word-break: break-all; }}
         a:hover {{ text-decoration: underline; }}
-        img.hero {{ width: 100%; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; margin: 20px 0 25px 0; display: block; background: #fafafa; }}
-        img.inline {{ width: 100%; height: auto; aspect-ratio: 16/10; object-fit: cover; border-radius: 6px; margin: 25px 0 8px 0; display: block; border: 1px solid #eee; background: #fafafa; }}
-        .caption {{ text-align: center; font-size: 0.85rem; color: #666; font-style: italic; margin-bottom: 25px; }}
-        @media (max-width: 600px) {{
-            body {{ padding: 15px; }}
-            h1 {{ font-size: 1.75rem; }}
-            h2 {{ font-size: 1.35rem; }}
-            p, li {{ font-size: 1rem; }}
+        .img-container {{ width: 100%; margin: 20px 0 25px 0; background: #f7fafc; border-radius: 8px; overflow: hidden; }}
+        img.hero, img.inline {{ width: 100%; height: auto; display: block; object-fit: cover; max-height: 360px; }}
+        .caption {{ text-align: center; font-size: 0.85rem; color: #718096; font-style: italic; padding: 8px 12px; background: #f7fafc; border-top: 1px solid #edf2f7; }}
+        @media (max-width: 480px) {{
+            body {{ padding: 16px 12px; }}
+            h1 {{ font-size: 1.65rem; margin-bottom: 16px; }}
+            h2 {{ font-size: 1.3rem; }}
+            p, li {{ font-size: 1rem; line-height: 1.6; }}
+            ul, ol {{ padding-left: 20px; }}
         }}
     </style>
 </head>
 <body>
     <main>
         <h1>{extracted_title}</h1>
-        <img src="https://images.unsplash.com/featured/?technology,hardware&sig={timestamp_sig}" class="hero" alt="Technical Workspace Setup">
+        <div class="img-container">
+            <img src="{hero_img_url}" class="hero" alt="Technical Workspace Optimization Processing">
+        </div>
         
-        {html_body}
+        {html_body_content}
         
-        <img src="https://images.unsplash.com/featured/?workspace,code&sig={timestamp_sig + 1}" class="inline" alt="Diagnostic Console Tracking">
-        <p class="caption">System diagnostics data layer confirmation matrix configuration.</p>
+        <div class="img-container">
+            <img src="{inline_img_url}" class="inline" alt="Diagnostic Console Tracking Layout">
+            <p class="caption">System diagnostics data verification architecture log telemetry metrics panel.</p>
+        </div>
     </main>
 </body>
 </html>
@@ -175,15 +187,15 @@ try:
         f.write(full_page_html)
     with open(HISTORY_FILE, "a", encoding="utf-8") as f:
         f.write(extracted_title + "\n")
-    print(f"SUCCESS: Assembled humanized post layout: {filename}")
+    print(f"SUCCESS: Generated responsive article layout: {filename}")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed saving article: {e}")
     sys.exit(1)
 
 # ==========================================
-# 5. RESPONSE HOMEPAGE GENERATOR
+# 5. HOMEPAGE GENERATOR
 # ==========================================
-print("Compiling responsive homepage index roll...")
+print("Compiling mobile-responsive homepage index...")
 
 with open(HISTORY_FILE, "r", encoding="utf-8") as f:
     all_posts = [line.strip() for line in f.readlines() if line.strip()]
@@ -194,9 +206,9 @@ list_items_html = ""
 for post_title in reversed(all_posts):
     post_url = generate_slug(post_title)
     list_items_html += f"""
-    <li style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #eee; list-style: none;">
-        <h2 style="margin: 0 0 10px 0; font-size: 1.4rem; line-height: 1.3; border: none; padding: 0;">
-            <a href="{post_url}" style="color: #111; text-decoration: none; font-weight: 700;">{post_title}</a>
+    <li style="margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid #edf2f7; list-style: none;">
+        <h2 style="margin: 0 0 8px 0; font-size: 1.35rem; line-height: 1.3; border: none; padding: 0;">
+            <a href="{post_url}" style="color: #1a202c; text-decoration: none; font-weight: 700;">{post_title}</a>
         </h2>
         <a href="{post_url}" style="color: #0066cc; font-size: 0.95rem; font-weight: 500;">Read Troubleshooting Guide &rarr;</a>
     </li>
@@ -209,16 +221,16 @@ index_html_content = f"""<!DOCTYPE html>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GadTech Optimization Labs</title>
     <style>
-        * {{ box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 680px; margin: 0 auto; padding: 40px 20px; color: #333; }}
-        header {{ margin-bottom: 40px; border-bottom: 3px solid #111; padding-bottom: 20px; }}
-        h1 {{ color: #111; margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }}
-        p.subtitle {{ color: #666; margin: 8px 0 0 0; font-size: 1.05rem; line-height: 1.4; }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 660px; margin: 0 auto; padding: 40px 16px; color: #2d3748; }}
+        header {{ margin-bottom: 35px; border-bottom: 3px solid #1a202c; padding-bottom: 16px; }}
+        h1 {{ color: #1a202c; margin: 0; font-size: 1.9rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }}
+        p.subtitle {{ color: #718096; margin: 6px 0 0 0; font-size: 1.05rem; line-height: 1.4; }}
         ul {{ padding: 0; margin: 0; }}
-        a:hover {{ text-decoration: underline !important; color: #004499 !important; }}
-        @media (max-width: 600px) {{
-            body {{ padding: 20px 15px; }}
-            h1 {{ font-size: 1.65rem; }}
+        a:hover {{ text-decoration: underline !important; }}
+        @media (max-width: 480px) {{
+            body {{ padding: 24px 12px; }}
+            h1 {{ font-size: 1.55rem; }}
             p.subtitle {{ font-size: 0.95rem; }}
         }}
     </style>
@@ -230,7 +242,7 @@ index_html_content = f"""<!DOCTYPE html>
     </header>
     <main>
         <ul>
-            {list_items_html if list_items_html else '<li style="list-style:none; color:#666;">No articles published yet. Check back soon!</li>'}
+            {list_items_html if list_items_html else '<li style="list-style:none; color:#718096;">No articles published yet. Check back soon!</li>'}
         </ul>
     </main>
 </body>
@@ -240,7 +252,7 @@ index_html_content = f"""<!DOCTYPE html>
 try:
     with open(INDEX_FILE, "w", encoding="utf-8") as f:
         f.write(index_html_content)
-    print("SUCCESS: Full dynamic portal rollout complete!")
+    print("SUCCESS: Homepage index updated successfully!")
 except Exception as e:
     print(f"CRITICAL ERROR: Failed to write homepage: {e}")
     sys.exit(1)
