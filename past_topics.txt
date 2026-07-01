@@ -1,2 +1,3 @@
 
 Untangling Premiere Pro's "Low-Level Exception" and GPU Memory Overflows
+Solving Zapier's 'Expected String, Got Object' Error in Advanced Workflows
