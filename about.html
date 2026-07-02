@@ -1,8 +1,65 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | GadTech Optimization Labs</title>
+    <style>
+        /* Exact match to your index.html for brand consistency */
+        :root { --bg: #f4f7f6; --card: #ffffff; --text: #334155; --head: #0f172a; --accent: #2563eb; --border: #e2e8f0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: var(--bg); padding: 60px 20px; color: var(--text); }
+        .hub-container { max-width: 720px; margin: 0 auto; background: var(--card); padding: 48px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+        header { margin-bottom: 40px; border-bottom: 3px solid var(--head); padding-bottom: 24px; }
+        h1 { color: var(--head); margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; }
+        p.subtitle { color: #64748b; margin: 12px 0 0 0; font-size: 1.15rem; line-height: 1.5; }
+        .main-nav { margin-top: 16px; }
+        .main-nav a { color: var(--accent); font-weight: 600; text-decoration: none; font-size: 1.05rem; }
+        .main-nav a:hover { text-decoration: underline; }
+        
+        /* Specific typography for the About Page body */
+        .content-body h2 { color: var(--head); margin: 32px 0 16px 0; font-size: 1.5rem; }
+        .content-body p { margin-bottom: 16px; font-size: 1.1rem; }
+        
+        /* Stylish call-to-action box */
+        .contact-box { background: #f8fafc; border-left: 4px solid var(--accent); padding: 20px; margin-top: 32px; border-radius: 0 8px 8px 0; }
+        .contact-box a { color: var(--accent); font-weight: 600; text-decoration: none; }
+        .contact-box a:hover { text-decoration: underline; }
+        
+        @media (max-width: 768px) {
+            body { padding: 16px 12px; }
+            .hub-container { padding: 24px 20px; }
+            h1 { font-size: 1.75rem; }
+        }
+    </style>
+</head>
 <body>
-  <h1>About the Author</h1>
-  <p>Hi, I am [Your Name]. I am a [Your Profession/Role].</p>
-  <p>I created this site to share my "in-the-trenches" experience with [Your Niche]. Unlike generic AI blogs, every post here is vetted for real-world application.</p>
-  <p>Connect with me on <a href="[Your LinkedIn Link]">LinkedIn</a>.</p>
+    <div class="hub-container">
+        <header>
+            <h1>Krishna Prakash Dwivedi</h1>
+            <p class="subtitle">Founder & Technical Architect, GadTech Optimization Labs</p>
+            
+            <nav class="main-nav">
+                <a href="index.html">&larr; Back to Solutions Hub</a>
+            </nav>
+        </header>
+        
+        <main class="content-body">
+            <p>Welcome to GadTech Optimization Labs. I built this autonomous system to bridge the gap between mathematical reasoning, AI tool engineering, and micro-SaaS architecture.</p>
+            
+            <h2>Experience Meets Automation</h2>
+            <p>My background is rooted in training high-level AI models in complex mathematical logic and structural reasoning. By understanding how large language models "think" and process data, I engineer autonomous systems—like the one running this very blog—that solve real-world problems without human bottlenecks.</p>
+            
+            <h2>Why I Built GadTech</h2>
+            <p>The internet is flooded with generic, low-effort AI content. I created this lab to do the exact opposite. Every playbook, diagnostic guide, and troubleshooting protocol published here is designed with strict technical constraints, focusing on high-intent solutions for digital creators and B2B professionals.</p>
+            
+            <p>Whether it's architecting a micro-SaaS product or untangling advanced API workflows, my goal is to provide copy-pasteable utility and production-level expertise rather than SEO fluff.</p>
+            
+            <div class="contact-box">
+                <p><strong>Want to collaborate or optimize your own workflows?</strong></p>
+                <p>Connect with me on <a href="#" target="_blank">LinkedIn</a> or explore my open-source projects on <a href="#" target="_blank">GitHub</a>.</p>
+            </div>
+        </main>
+    </div>
 </body>
 </html>
