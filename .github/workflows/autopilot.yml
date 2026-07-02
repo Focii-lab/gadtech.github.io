@@ -1,22 +1,16 @@
 name: Automated AI Content Deploy
 
-# Ensures only one deployment job runs at a time, preventing API collisions
+# Ensures only one deployment job runs at a time
 concurrency:
   group: content-deploy
   cancel-in-progress: false
 
 on:
   schedule:
-    # Runs at 15 minutes past every 8th hour (e.g., 00:15, 08:15, 16:15)
+    # Runs at 15 minutes past every 8th hour
     - cron: '15 */8 * * *'
-  push:
-    branches:
-      - main
-    # Prevents infinite loops when you update static files
-    paths-ignore:
-      - 'about.html'
-      - 'README.md'
-      - 'past_topics.txt'
+  # We removed the "push" trigger entirely!
+  # workflow_dispatch allows you to click a button to run it manually if you ever want to.
   workflow_dispatch:
 
 jobs:
