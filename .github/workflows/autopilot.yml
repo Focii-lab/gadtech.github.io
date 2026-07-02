@@ -1,9 +1,14 @@
 name: Automated AI Content Deploy
 
+# Ensures only one deployment job runs at a time, preventing API collisions
+concurrency:
+  group: content-deploy
+  cancel-in-progress: false
+
 on:
   schedule:
-    # Runs at 15 minutes past every 3rd hour
-    - cron: '15 */3 * * *'
+    # Runs at 15 minutes past every 8th hour (e.g., 00:15, 08:15, 16:15)
+    - cron: '15 */8 * * *'
   push:
     branches:
       - main
@@ -20,20 +25,16 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
       - name: Install dependencies
         run: pip install google-genai
-
       - name: Run Automator
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python automator.py
-
       - name: Deploy
         run: |
           git config --global user.name 'github-actions[bot]'
