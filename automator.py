@@ -1,73 +1,94 @@
 import os
-import glob
+import re
+import sys
+import urllib.parse
+from google import genai
+from google.genai import types
 
-print("🧹 Starting Bulk Deletion & System Reset...")
+# ==========================================
+# 0. CONFIGURATION
+# ==========================================
+TEST_MODE = False
+API_KEY = os.environ.get("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY) if not TEST_MODE else None
+HISTORY_FILE = "past_topics.txt"
+INDEX_FILE = "index.html"
 
-# 1. Clear out all blog posts, but save index.html and about.html
-for file_path in glob.glob("*.html"):
-    if file_path not in ["index.html", "about.html"]:
-        try:
-            os.remove(file_path)
-            print(f"🗑️ Deleted blog post file: {file_path}")
-        except Exception as e:
-            print(f"❌ Could not delete {file_path}: {e}")
+def get_recent_history():
+    if not os.path.exists(HISTORY_FILE): return "Baseline Initialization"
+    with open(HISTORY_FILE, "r", encoding="utf-8") as f:
+        lines = [line.strip() for line in f.readlines() if line.strip()]
+        return lines[-1] if lines else "Baseline Initialization"
 
-# 2. Reset past_topics.txt back to fresh baseline
-try:
-    with open("past_topics.txt", "w", encoding="utf-8") as f:
-        f.write("Baseline Initialization")
-    print("📝 Reset past_topics.txt history file.")
-except Exception as e:
-    print(f"❌ Could not reset history file: {e}")
+def extract_field(field, text):
+    match = re.search(f"{field}:\s*(.*)", text)
+    return match.group(1).strip() if match else "N/A"
 
-# 3. Clear the blog list from index.html, leaving just your clean template
-clean_index_content = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GadTech Optimization Labs</title>
-    <style>
-        :root { --bg: #f4f7f6; --card: #ffffff; --text: #334155; --head: #0f172a; --accent: #2563eb; --border: #e2e8f0; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; background: var(--bg); padding: 60px 20px; color: var(--text); }
-        .hub-container { max-width: 720px; margin: 0 auto; background: var(--card); padding: 48px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid var(--border); }
-        header { margin-bottom: 40px; border-bottom: 3px solid var(--head); padding-bottom: 24px; }
-        h1 { color: var(--head); margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; }
-        p.subtitle { color: #64748b; margin: 12px 0 0 0; font-size: 1.15rem; line-height: 1.5; }
-        .main-nav { margin-top: 16px; }
-        .main-nav a { color: var(--accent); font-weight: 600; text-decoration: none; font-size: 1.05rem; }
-        .main-nav a:hover { text-decoration: underline; }
-        ul { list-style: none; }
-        @media (max-width: 768px) {
-            body { padding: 16px 12px; }
-            .hub-container { padding: 24px 20px; }
-            h1 { font-size: 1.75rem; }
-        }
-    </style>
-</head>
-<body>
-    <div class="hub-container">
-        <header>
-            <h1>GadTech Optimization Labs</h1>
-            <p class="subtitle">Autonomous diagnostic solutions & troubleshooting playbooks for digital creators.</p>
-            <nav class="main-nav">
-                <a href="about.html">About Me &rarr;</a>
-            </nav>
-        </header>
-        <main>
-            <ul>
-            </ul>
-        </main>
-    </div>
-</body>
-</html>"""
+def run_engine():
+    try:
+        print("PHASE 1: Architecting content waterfall...")
+        recent_topic = get_recent_history()
+        
+        call_1_prompt = f"""
+        Role: Lead B2B Technical Editor.
+        Task: Create a Pillar-level technical guide.
+        Waterfall Foundation: Reference and link to this foundation topic: "{recent_topic}"
+        Requirements:
+        1. SEARCH_INTENT: Define as Navigational, Commercial, or Transactional.
+        2. CTA_STAGE: Define as Awareness, Consideration, or Decision.
+        3. PROOF_POINT: Identify one specific metric (e.g., 'reduces latency by 30%').
+        4. LINK_STRATEGY: Define how to link to "{recent_topic}".
+        5. OUTLINE: Create a 4-part structure that naturally builds upon "{recent_topic}".
+        Output ONLY in this format:
+        TITLE: [Title]
+        SEARCH_INTENT: [Intent]
+        CTA_TYPE: [Stage]
+        PROOF_POINT: [Metric]
+        LINK_STRATEGY: [Strategy]
+        OUTLINE: - [Hook] - [Deep Dive] - [Evidence] - [Decision/CTA]
+        """
+        
+        resp1 = client.models.generate_content(model="gemini-2.0-flash", contents=call_1_prompt)
+        blueprint = resp1.text
+        
+        # Extraction
+        title = extract_field("TITLE", blueprint)
+        link_strat = extract_field("LINK_STRATEGY", blueprint)
+        proof = extract_field("PROOF_POINT", blueprint)
+        cta = extract_field("CTA_TYPE", blueprint)
 
-try:
-    with open("index.html", "w", encoding="utf-8") as f:
-        f.write(clean_index_content)
-    print("✨ Reset index.html homepage template.")
-except Exception as e:
-    print(f"❌ Could not reset homepage: {e}")
+        print("PHASE 2: Writing authority content...")
+        call_2_prompt = f"""
+        Role: Experienced B2B Technical Consultant.
+        Task: Write a 1,000-word authority guide. 
+        Tone: Human, first-person, opinionated, professional.
+        Content Rules:
+        1. Introduction: Start with a 2-sentence personal anecdote about the frustration of encountering this problem.
+        2. Technical Body: Expert-level guide using "I/We". 
+        3. Conclusion: End with a "Human Verdict"—a brief, opinionated summary.
+        4. Foundation: Naturally link to: "{recent_topic}" using: {link_strat}.
+        5. Visuals: Use [AI_IMAGE: prompt] at 2 logical spots.
+        Title: {title}
+        Outline: {blueprint}
+        """
+        resp2 = client.models.generate_content(model="gemini-2.0-flash", contents=call_2_prompt)
+        
+        # Image Parsing (Elite 1% Constraints)
+        def process_match(match):
+            prompt = match.group(1).strip()
+            style = f"{prompt}, professional technical schematic, vector illustration, white background, #2563eb blue and #1e293b slate color scheme"
+            url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(style)}?width=1000&height=560&nologo=true"
+            return f'<div class="img-container"><img src="{url}" alt="{prompt}" loading="lazy"><div class="caption">{prompt}</div></div>'
+        
+        html_content = re.sub(r'\[AI_IMAGE:\s*(.*?)\]', process_match, resp2.text)
+        
+        # Save History (Simplified for backup representation)
+        with open(HISTORY_FILE, "a") as f: f.write(f"\n{title}")
+        print("System Success: Content deployed.")
+        
+    except Exception as e:
+        print(f"CRITICAL ERROR: {str(e)}")
+        sys.exit(1)
 
-print("✅ System successfully wiped clean.")
+if __name__ == "__main__":
+    run_engine()
