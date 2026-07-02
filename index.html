@@ -12,6 +12,13 @@
         header { margin-bottom: 40px; border-bottom: 3px solid var(--head); padding-bottom: 24px; }
         h1 { color: var(--head); margin: 0; font-size: 2.2rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; }
         p.subtitle { color: #64748b; margin: 12px 0 0 0; font-size: 1.15rem; line-height: 1.5; }
+        
+        /* --- Added Navigation Styles --- */
+        .main-nav { margin-top: 16px; }
+        .main-nav a { color: var(--accent); font-weight: 600; text-decoration: none; font-size: 1.05rem; }
+        .main-nav a:hover { text-decoration: underline; }
+        /* ------------------------------- */
+
         ul { list-style: none; }
         .index-item { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
         .index-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
@@ -20,6 +27,7 @@
         .index-item h2 a:hover { color: var(--accent); }
         .read-more { color: var(--accent); font-size: 1rem; font-weight: 600; text-decoration: none; }
         .read-more:hover { text-decoration: underline; }
+        
         @media (max-width: 768px) {
             body { padding: 16px 12px; }
             .hub-container { padding: 24px 20px; }
@@ -33,6 +41,11 @@
         <header>
             <h1>GadTech Optimization Labs</h1>
             <p class="subtitle">Autonomous diagnostic solutions & troubleshooting playbooks for digital creators.</p>
+            
+            <nav class="main-nav">
+                <a href="about.html">About Me &rarr;</a>
+            </nav>
+            
         </header>
         <main>
             <ul>
